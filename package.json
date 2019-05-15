@@ -1,0 +1,16 @@
+{
+  "name": "budgeteer",
+  "version": "1.0.0",
+  "description": "Budget your resources visually",
+  "private": true,
+  "scripts": {},
+  "dependencies": {
+    "ts-mixer": "^3.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^3.4.5"
+  },
+  "repository": "https://github.com/tannerntannern/budgeteer.git",
+  "author": "Tanner Nielsen",
+  "license": "MIT"
+}

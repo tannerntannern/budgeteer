@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "lib": ["es6"],
+        "target": "es6",
+        "module": "es6",
+        "moduleResolution": "node"
+    },
+    "include": [
+        "src/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules"
+    ]
+}
