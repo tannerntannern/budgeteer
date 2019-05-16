@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "Budget your resources visually",
   "private": true,
-  "scripts": {},
+  "scripts": {
+    "build": "tsc"
+  },
   "dependencies": {
     "ts-mixer": "^3.0.0"
   },

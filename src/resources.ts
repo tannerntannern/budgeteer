@@ -1,10 +1,11 @@
 import {Mixin} from 'ts-mixer';
+import BalanceMap from './balance-map';
 
-class Node {
+abstract class Node {
     constructor(public name: string) {}
 }
 
-class Consumable {
+class Consumable extends Node {
     public supplies(amount: number) {
         const supplier = this;
 
@@ -27,23 +28,23 @@ class Consumable {
         }
     }
 
-    public suppliesRemaining() {
+    public suppliesAsMuchAsPossible() {
         const supplier = this;
         
         return {
             to(supplyable: Supplyable) {
-                supplyable.consumesRemaining().from(supplier);
+                supplyable.consumesAsMuchAsPossible().from(supplier);
                 return supplier;
             }
         }
     }
 }
 
-class Supplyable {
-    protected suppliers = {
-        contracted: [] as {consumable: Consumable, amount: number}[],
-        onCall: [] as Consumable[],
-        volunteering: [] as Consumable[]
+class Supplyable extends Node {
+    public readonly suppliers = {
+        contracts: [] as {consumable: Consumable, amount: number}[],
+        volunteers: [] as Consumable[],
+        leftovers: [] as Consumable[]
     };
 
     public consumes(amount: number) {
@@ -51,7 +52,7 @@ class Supplyable {
 
         return {
             from(consumable: Consumable) {
-                consumer.suppliers.contracted.push({consumable, amount});
+                consumer.suppliers.contracts.push({consumable, amount});
                 return consumer;
             }
         }
@@ -62,58 +63,127 @@ class Supplyable {
 
         return {
             from(consumable: Consumable) {
-                consumer.suppliers.onCall.push(consumable);
+                consumer.suppliers.volunteers.push(consumable);
                 return consumer;
             }
         }
     }
 
-    public consumesRemaining() {
+    public consumesAsMuchAsPossible() {
         const consumer = this;
 
         return {
             from(consumable: Consumable) {
-                consumer.suppliers.volunteering.push(consumable);
+                consumer.suppliers.leftovers.push(consumable);
                 return consumer;
             }
         }
     }
 }
 
-export class Supply extends Mixin(Node, Consumable) {
-    constructor(name: string, public amount: number) {
+export class Supply extends Consumable {
+    constructor(name: string, public initialBalance: number) {
         super(name);
     }
 }
 
-export class Consumer extends Mixin(Node, Supplyable) {}
+export class Consumer extends Supplyable {}
 
-export class Conduit extends Mixin(Node, Consumable, Supplyable) {}
+export class Conduit extends Mixin(Consumable, Supplyable) {}
 
-class ResultantNode {
-    public inputs: {node: ResultantNode, amount: number}[] = [];
-    public outputs: {node: ResultantNode, amount: number}[] = [];
+function isConduit(node: Node): node is Conduit {
+    return node instanceof Conduit;
+}
 
-    constructor(public name: string) {}
+function isSupply(node: Node): node is Supply {
+    return node instanceof Supply;
+}
+
+function isSupplyable(node: Node): node is Supplyable {
+    return !!node['suppliers'];
+}
+
+function isConsumer(node: Node): node is Consumer {
+    return node instanceof Supply;
 }
 
 export class Network {
-    constructor(private nodes: Node[] = []) {}
+    private nodes: Node[];
+
+    constructor(...nodes: Node[]) {
+        this.nodes = nodes;
+    }
 
     public add(...nodes: Node[]) {
         this.nodes.push(...nodes);
     }
 
-    public getResultantNodes(): ResultantNode[] {
-        const nodeMap = new Map<Node, ResultantNode>();
-        this.nodes.forEach(node => nodeMap.set(node, new ResultantNode(node.name)));
+    public resolveBalances() {
+        const supplies = new Map<Node, number>();       // Keeps track of the balance on each node
+        const consumption = new BalanceMap<Node>();     // Keeps track of how much each node is consuming from each other node
+        for (let i = 0; i < this.nodes.length; i ++) {
+            const ni = this.nodes[i];
+            supplies.set(ni, isSupply(ni) ? ni.initialBalance : 0);
 
-        // TODO: ...
+            for (let j = i + 1; j < this.nodes.length; j ++) {
+                const nj = this.nodes[j];
+                consumption.set(ni, nj, 0);
+            }
+        }
 
-        return [];
+        const consumers = this.nodes.filter(node => isConsumer(node)) as Consumer[];
+        consumers.forEach(node => {
+            meetContracts(node);
+            requestFromVolunteers(node);
+        });
+        consumers.forEach(node => consumeLeftovers(node));
+
+        function meetContracts(node: Supplyable) {
+            node.suppliers.contracts.forEach(contract => {
+                const deficit = contract.amount - consumption.get(node, contract.consumable);
+                consume(contract.consumable, node, deficit);
+            });
+        }
+
+        function requestFromVolunteers(node: Supplyable) {
+            // TODO
+        }
+
+        function consumeLeftovers(node: Supplyable) {
+            // TODO
+        }
+
+        function consume(supplier: Consumable, consumer: Supplyable, amount: number) {
+            // If our supplier is a conduit, force it to meet contracts before proceeding
+            if (isConduit(supplier)) meetContracts(supplier);
+
+            const supplierAmount = supplies.get(supplier);
+            const diff = supplierAmount - amount;
+
+            if (diff >= 0) {
+                transfer(supplier, consumer, amount);
+            } else {
+                if (isSupply(supplier)) {
+                    throw new Error(`"${consumer.name}" requires ${amount} from "${supplier.name}" which only has ${supplierAmount}`);
+                } else {
+                    // TODO
+                }
+            }
+        }
+
+        function transfer(from: Consumable, to: Supplyable, amount: number) {
+            const fromSupply = supplies.get(from);
+            const toSupply = supplies.get(to);
+
+            supplies.set(from, fromSupply - amount);
+            supplies.set(to, toSupply + amount);
+            consumption.shift(to, from, amount);
+        }
     }
 }
 
-// let s = new Supply('Wages', 2000);
-// let c = new Consumer('Rent').consumes(1322).from(s);
-// let r = new Consumer('Remaining').consumesRemaining().from(s);
+let s = new Supply('Wages', 2000);
+let c = new Consumer('Rent').consumes(1322).from(s);
+let r = new Consumer('Remaining').consumesAsMuchAsPossible().from(s);
+
+let network = new Network(s, c, r);
