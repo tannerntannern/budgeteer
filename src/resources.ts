@@ -12,19 +12,22 @@ type To = { to: (node: Node<Supplyable>) => Node<Consumable> };
 type From = { from: (node: Node<Consumable>) => Node<Supplyable> };
 
 type NodeBase = { name: string, type: NodeType };
-type Node<T extends NodeType = NodeType> = NodeBase & (
-    T extends Consumable ? {
-        supplies: (amount: number) => To,
-        suppliesAsMuchAsNecessary: () => To,
-        suppliesAsMuchAsPossible: () => To,
-    }
-    : T extends Supplyable ? {
-        consumes: (amount: number) => From,
-        consumesAsMuchAsNecessary: () => From,
-        consumesAsMuchAsPossible: () => From,
-    }
-    : {}
-);
+type Node<T extends NodeType = NodeType> =
+    NodeBase
+    & (
+        T extends Consumable ? {
+            supplies: (amount: number) => To,
+            suppliesAsMuchAsNecessary: () => To,
+            suppliesAsMuchAsPossible: () => To,
+        } : {}
+    )
+    & (
+        T extends Supplyable ? {
+            consumes: (amount: number) => From,
+            consumesAsMuchAsNecessary: () => From,
+            consumesAsMuchAsPossible: () => From,
+        } : {}
+    );
 
 /**
  * Maps each Node to the Set of its suppliers.
@@ -83,58 +86,107 @@ function sumOfSupply (node: Node<Supplyable>): Expression {
     return result;
 }
 
-const consumableMixin = (node): Node<Consumable> => {
-    node.supplies = (amount: number) => ({
+/**
+ * Registering a transfer between a consumable and a supplyable requires also registering the inverse transfer.
+ * This is tedious, so this function takes care of it.
+ */
+const registerTransfers = (consumable: Node<Consumable>, supplyable: Node<Supplyable>) => {
+    suppliers.get(supplyable).add(consumable);
+    consumers.get(consumable).add(supplyable);
+
+    const consumableToSupplyable = new Variable(`T(${consumable.name}, ${supplyable.name})`);
+    const supplyableToConsumable = new Variable(`T(${supplyable.name}, ${consumable.name})`);
+    transfers.set(consumable, supplyable, consumableToSupplyable);
+    transfers.set(supplyable, consumable, supplyableToConsumable);
+
+    return { consumableToSupplyable, supplyableToConsumable };
+};
+
+/**
+ * Turns a node into a consumable.  The given node is modified in place and returned.
+ */
+const consumableMixin = (node: NodeBase | Node<Supply>): Node<Consumable> => {
+    // The given node will become a Node<Consumable> by the end of the function, so we preemptively assign
+    // the type to make the compiler happy.
+    const result: Node<Consumable> = node as any;
+
+    result.supplies = (amount: number) => ({
         to: (supplyable: Node<Supplyable>) => {
-            suppliers.get(supplyable).add(node);
-            consumers.get(node).add(supplyable);
-            
-            transfers.set(node, supplyable, new Variable(`T(${node.name}, ${supplyable.name})`));
-            transfers.set(supplyable, node, new Variable(`T(${supplyable.name}, ${node.name})`));
+            const { consumableToSupplyable, supplyableToConsumable } = registerTransfers(result, supplyable);
 
-            // ...
+            constraints.push(() => {
+                solver.createConstraint(supplyableToConsumable, Operator.Eq, amount, Strength.required);
+                solver.createConstraint(consumableToSupplyable, Operator.Eq, supplyableToConsumable.multiply(-1), Strength.required);
+            });
 
-            return node;
+            return result;
         }
     });
 
-    node.suppliesAsMuchAsNecessary = () => ({
+    result.suppliesAsMuchAsNecessary = () => ({
         to: (supplyable: Node<Supplyable>) => {
-            // ...
+            const { consumableToSupplyable, supplyableToConsumable } = registerTransfers(result, supplyable);
+
+            constraints.push(() => {
+                solver.createConstraint(supplyableToConsumable, Operator.Ge, 0, Strength.required);
+                solver.createConstraint(supplyableToConsumable, Operator.Eq, 0, Strength.weak);
+                solver.createConstraint(consumableToSupplyable, Operator.Eq, supplyableToConsumable.multiply(-1), Strength.required);
+            });
+
+            return result;
         }
     });
 
-    node.suppliesAsMuchAsPossible = () => ({
+    result.suppliesAsMuchAsPossible = () => ({
         to: (supplyable: Node<Supplyable>) => {
-            // ...
+            const { consumableToSupplyable, supplyableToConsumable } = registerTransfers(result, supplyable);
+
+            constraints.push(() => {
+                solver.createConstraint(supplyableToConsumable, Operator.Ge, 0, Strength.required);
+                solver.createConstraint(supplyableToConsumable, Operator.Eq, Infinity, Strength.weak);
+                solver.createConstraint(consumableToSupplyable, Operator.Eq, supplyableToConsumable.multiply(-1), Strength.required);
+            });
+
+            return result;
         }
     });
 
-    return node;
+    return result;
 }
 
-const supplyableMixin = (node): Node<Supplyable> => {
-    node.consumes = (amount: number) => ({
+/**
+ * Turns a node into a supplyable.  The given node is modified in place and returned.
+ */
+const supplyableMixin = (node: NodeBase | Node<Supply>): Node<Supplyable> => {
+    const result = node as Node<Supplyable>;
+
+    result.consumes = (amount: number) => ({
         from: (consumable: Node<Consumable>) => {
-            // ...
+            consumable.supplies(amount).to(result);
+            return result;
         }
     });
 
-    node.consumesAsMuchAsNecessary = () => ({
+    result.consumesAsMuchAsNecessary = () => ({
         from: (consumable: Node<Consumable>) => {
-            // ...
+            consumable.suppliesAsMuchAsNecessary().to(result);
+            return result;
         }
     });
 
-    node.consumesAsMuchAsPossible = () => ({
+    result.consumesAsMuchAsPossible = () => ({
         from: (consumable: Node<Consumable>) => {
-            // ...
+            consumable.suppliesAsMuchAsPossible().to(result);
+            return result;
         }
     })
 
-    return node;
+    return result;
 }
 
+/**
+ * Creates a supply node.
+ */
 function supply (name: string, capacity: number): Node<Supply> {
     const supply = consumableMixin({ name, type: 'supply' });
     
@@ -154,10 +206,16 @@ function supply (name: string, capacity: number): Node<Supply> {
     return supply;
 }
 
+/**
+ * Creates a consumer node.
+ */
 function consumer (name: string) {
     // TODO: ...
 }
 
+/**
+ * Creates a pipe node.
+ */
 function pipe (name: string) {
     // TODO: ...
 }
