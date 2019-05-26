@@ -4,10 +4,12 @@
   "description": "Budget your resources visually",
   "private": true,
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "watch": "yarn build --watch",
+    "test": "node dist/index.js"
   },
   "dependencies": {
-    "ts-mixer": "^3.0.0"
+    "kiwi.js": "^1.1.1"
   },
   "devDependencies": {
     "typescript": "^3.4.5"

@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-ts-mixer@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/ts-mixer/-/ts-mixer-3.0.0.tgz#a6182ed41515ffeb7399942337cbf940e030eeed"
-  integrity sha512-MG/XIz7ihXy9w73H2//iU3Ao6Qmmk3fViqdh49UGhzbAV+0xubckh2znJKJcjMLt29VdTGiuMc7KaG1/YZU3sg==
+kiwi.js@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/kiwi.js/-/kiwi.js-1.1.1.tgz#a5b14626e6d34bea9a8eb45e3a7dd8e096fa3f90"
+  integrity sha512-rH3tMPWuGlhhW4PPmUE/IyHyrZ6VehEtwYM2uj3ZEXrgoQv7/Jyr3PqQORSjrWgc6+wx5sNIKNpXEZnldQkwrg==
 
 typescript@^3.4.5:
   version "3.4.5"

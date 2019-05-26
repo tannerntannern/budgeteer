@@ -1,189 +1,167 @@
-import {Mixin} from 'ts-mixer';
-import BalanceMap from './balance-map';
+import { Variable, Solver, Operator, Strength, Expression } from 'kiwi.js';
+import { TwoKeyMap } from './two-key-map';
+  
+type Supply = 'supply';
+type Consumer = 'consumer';
+type Pipe = 'pipe';
+type Supplyable = Consumer | Pipe;
+type Consumable = Supply | Pipe;
+type NodeType = Supply | Consumer | Pipe;
 
-abstract class Node {
-    constructor(public name: string) {}
+type To = { to: (node: Node<Supplyable>) => Node<Consumable> };
+type From = { from: (node: Node<Consumable>) => Node<Supplyable> };
+
+type NodeBase = { name: string, type: NodeType };
+type Node<T extends NodeType = NodeType> = NodeBase & (
+    T extends Consumable ? {
+        supplies: (amount: number) => To,
+        suppliesAsMuchAsNecessary: () => To,
+        suppliesAsMuchAsPossible: () => To,
+    }
+    : T extends Supplyable ? {
+        consumes: (amount: number) => From,
+        consumesAsMuchAsNecessary: () => From,
+        consumesAsMuchAsPossible: () => From,
+    }
+    : {}
+);
+
+/**
+ * Maps each Node to the Set of its suppliers.
+ */
+const suppliers: Map<Node<Supplyable>, Set<Node<Consumable>>> = new Map();
+
+/**
+ * Maps each Node to the Set of its consumers.
+ */
+const consumers: Map<Node<Consumable>, Set<Node<Supplyable>>> = new Map();
+
+/**
+ * Maps each Node to its balance.
+ */
+const balances: Map<Node, Variable> = new Map();
+
+/**
+ * Maps a pair of Nodes to the amount transferred between them.
+ */
+const transfers: TwoKeyMap<Node, Variable> = new TwoKeyMap();
+
+/**
+ * Array of functions that setup constraints on the solver.  Due to the nature of some of these constraints,
+ * they can't be applied until all the nodes exist, which is why they have to be batched up in functions.
+ */
+const constraints: (() => void)[] = [];
+
+/**
+ * Constraint solver that does all the heavy lifting.
+ */
+const solver = new Solver();
+
+/**
+ * Returns an Expression that represents the total value consumed by the given node's consumers.
+ */
+function sumOfConsumption (node: Node<Consumable>): Expression {
+    let result = new Expression(0);
+
+    consumers.get(node).forEach(consumer => {
+        result = result.plus(transfers.get(node, consumer))
+    });
+
+    return result;
 }
 
-class Consumable extends Node {
-    public supplies(amount: number) {
-        const supplier = this;
+/**
+ * Returns an Expression that represents the total value supplied by the given node's suppliers.
+ */
+function sumOfSupply (node: Node<Supplyable>): Expression {
+    let result = new Expression(0);
 
-        return {
-            to(supplyable: Supplyable) {
-                supplyable.consumes(amount).from(supplier);
-                return supplier;
-            }
-        }
-    }
+    suppliers.get(node).forEach(supplier => {
+        result = result.plus(transfers.get(supplier, node))
+    });
 
-    public suppliesAsMuchAsNeeded() {
-        const supplier = this;
-
-        return {
-            to(supplyable: Supplyable) {
-                supplyable.consumesAsMuchAsNeeded().from(supplier);
-                return supplier;
-            }
-        }
-    }
-
-    public suppliesAsMuchAsPossible() {
-        const supplier = this;
-        
-        return {
-            to(supplyable: Supplyable) {
-                supplyable.consumesAsMuchAsPossible().from(supplier);
-                return supplier;
-            }
-        }
-    }
+    return result;
 }
 
-class Supplyable extends Node {
-    public readonly suppliers = {
-        contracts: [] as {consumable: Consumable, amount: number}[],
-        volunteers: [] as Consumable[],
-        leftovers: [] as Consumable[]
-    };
+const consumableMixin = (node): Node<Consumable> => {
+    node.supplies = (amount: number) => ({
+        to: (supplyable: Node<Supplyable>) => {
+            suppliers.get(supplyable).add(node);
+            consumers.get(node).add(supplyable);
+            
+            transfers.set(node, supplyable, new Variable(`T(${node.name}, ${supplyable.name})`));
+            transfers.set(supplyable, node, new Variable(`T(${supplyable.name}, ${node.name})`));
 
-    public consumes(amount: number) {
-        const consumer = this;
+            // ...
 
-        return {
-            from(consumable: Consumable) {
-                consumer.suppliers.contracts.push({consumable, amount});
-                return consumer;
-            }
+            return node;
         }
-    }
+    });
 
-    public consumesAsMuchAsNeeded() {
-        const consumer = this;
-
-        return {
-            from(consumable: Consumable) {
-                consumer.suppliers.volunteers.push(consumable);
-                return consumer;
-            }
+    node.suppliesAsMuchAsNecessary = () => ({
+        to: (supplyable: Node<Supplyable>) => {
+            // ...
         }
-    }
+    });
 
-    public consumesAsMuchAsPossible() {
-        const consumer = this;
-
-        return {
-            from(consumable: Consumable) {
-                consumer.suppliers.leftovers.push(consumable);
-                return consumer;
-            }
+    node.suppliesAsMuchAsPossible = () => ({
+        to: (supplyable: Node<Supplyable>) => {
+            // ...
         }
-    }
+    });
+
+    return node;
 }
 
-export class Supply extends Consumable {
-    constructor(name: string, public initialBalance: number) {
-        super(name);
-    }
+const supplyableMixin = (node): Node<Supplyable> => {
+    node.consumes = (amount: number) => ({
+        from: (consumable: Node<Consumable>) => {
+            // ...
+        }
+    });
+
+    node.consumesAsMuchAsNecessary = () => ({
+        from: (consumable: Node<Consumable>) => {
+            // ...
+        }
+    });
+
+    node.consumesAsMuchAsPossible = () => ({
+        from: (consumable: Node<Consumable>) => {
+            // ...
+        }
+    })
+
+    return node;
 }
 
-export class Consumer extends Supplyable {}
+function supply (name: string, capacity: number): Node<Supply> {
+    const supply = consumableMixin({ name, type: 'supply' });
+    
+    const balance = new Variable(`B(${name})`);
+    balances.set(supply, balance);
 
-export class Conduit extends Mixin(Consumable, Supplyable) {}
+    constraints.push(() => {
+        solver.createConstraint(balance, Operator.Ge, 0, Strength.required);
+        solver.createConstraint(
+            balance,
+            Operator.Eq,
+            new Expression(capacity).minus(sumOfConsumption(supply)),
+            Strength.required
+        );
+    });
 
-function isConduit(node: Node): node is Conduit {
-    return node instanceof Conduit;
+    return supply;
 }
 
-function isSupply(node: Node): node is Supply {
-    return node instanceof Supply;
+function consumer (name: string) {
+    // TODO: ...
 }
 
-function isSupplyable(node: Node): node is Supplyable {
-    return !!node['suppliers'];
+function pipe (name: string) {
+    // TODO: ...
 }
 
-function isConsumer(node: Node): node is Consumer {
-    return node instanceof Supply;
-}
-
-export class Network {
-    private nodes: Node[];
-
-    constructor(...nodes: Node[]) {
-        this.nodes = nodes;
-    }
-
-    public add(...nodes: Node[]) {
-        this.nodes.push(...nodes);
-    }
-
-    public resolveBalances() {
-        const supplies = new Map<Node, number>();       // Keeps track of the balance on each node
-        const consumption = new BalanceMap<Node>();     // Keeps track of how much each node is consuming from each other node
-        for (let i = 0; i < this.nodes.length; i ++) {
-            const ni = this.nodes[i];
-            supplies.set(ni, isSupply(ni) ? ni.initialBalance : 0);
-
-            for (let j = i + 1; j < this.nodes.length; j ++) {
-                const nj = this.nodes[j];
-                consumption.set(ni, nj, 0);
-            }
-        }
-
-        const consumers = this.nodes.filter(node => isConsumer(node)) as Consumer[];
-        consumers.forEach(node => {
-            meetContracts(node);
-            requestFromVolunteers(node);
-        });
-        consumers.forEach(node => consumeLeftovers(node));
-
-        function meetContracts(node: Supplyable) {
-            node.suppliers.contracts.forEach(contract => {
-                const deficit = contract.amount - consumption.get(node, contract.consumable);
-                consume(contract.consumable, node, deficit);
-            });
-        }
-
-        function requestFromVolunteers(node: Supplyable) {
-            // TODO
-        }
-
-        function consumeLeftovers(node: Supplyable) {
-            // TODO
-        }
-
-        function consume(supplier: Consumable, consumer: Supplyable, amount: number) {
-            // If our supplier is a conduit, force it to meet contracts before proceeding
-            if (isConduit(supplier)) meetContracts(supplier);
-
-            const supplierAmount = supplies.get(supplier);
-            const diff = supplierAmount - amount;
-
-            if (diff >= 0) {
-                transfer(supplier, consumer, amount);
-            } else {
-                if (isSupply(supplier)) {
-                    throw new Error(`"${consumer.name}" requires ${amount} from "${supplier.name}" which only has ${supplierAmount}`);
-                } else {
-                    // TODO
-                }
-            }
-        }
-
-        function transfer(from: Consumable, to: Supplyable, amount: number) {
-            const fromSupply = supplies.get(from);
-            const toSupply = supplies.get(to);
-
-            supplies.set(from, fromSupply - amount);
-            supplies.set(to, toSupply + amount);
-            consumption.shift(to, from, amount);
-        }
-    }
-}
-
-let s = new Supply('Wages', 2000);
-let c = new Consumer('Rent').consumes(1322).from(s);
-let r = new Consumer('Remaining').consumesAsMuchAsPossible().from(s);
-
-let network = new Network(s, c, r);
+export default {
+    // TODO: ...
+};
