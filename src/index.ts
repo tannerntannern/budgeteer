@@ -9,6 +9,9 @@ other.consumesAsMuchAsPossible().from(wages);
 
 let results = Network.solve();
 
-console.log(results.transfers.get(wages, rent).toString());
-console.log(results.transfers.get(wages, other).toString());
-console.log(results.balances.get(wages).toString());
+console.log('\n=== Transfer Summary ===');
+results.transfers.forEach((from, to, value) => {
+    if (value.value() > 0)
+        console.log(`${from.name} --> ${value.value()}) --> ${to.name}`);
+});
+console.log();
