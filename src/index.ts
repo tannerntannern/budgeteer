@@ -9,5 +9,6 @@ other.consumesAsMuchAsPossible().from(wages);
 
 let results = Network.solve();
 
-console.log(results.transfers.get(wages, rent).value());
-console.log(results.transfers.get(wages, other).value());
+console.log(results.transfers.get(wages, rent).toString());
+console.log(results.transfers.get(wages, other).toString());
+console.log(results.balances.get(wages).toString());

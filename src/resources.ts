@@ -72,7 +72,7 @@ function sumOfConsumption (node: Node<Consumable>): Expression {
     let result = new Expression(0);
 
     consumers.get(node).forEach(consumer => {
-        result = result.plus(transfers.get(node, consumer))
+        result = result.plus(transfers.get(node, consumer));
     });
 
     return result;
@@ -110,8 +110,8 @@ const registerTransfers = (consumable: Node<Consumable>, supplyable: Node<Supply
     suppliers.get(supplyable).add(consumable);
     consumers.get(consumable).add(supplyable);
 
-    const consumableToSupplyable = new Variable(`T(${consumable.name}, ${supplyable.name})`);
-    const supplyableToConsumable = new Variable(`T(${supplyable.name}, ${consumable.name})`);
+    const consumableToSupplyable = new Variable(`${consumable.name}->${supplyable.name}`);
+    const supplyableToConsumable = new Variable(`${supplyable.name}->${consumable.name}`);
     transfers.set(consumable, supplyable, consumableToSupplyable);
     transfers.set(supplyable, consumable, supplyableToConsumable);
 
@@ -122,7 +122,7 @@ const registerTransfers = (consumable: Node<Consumable>, supplyable: Node<Supply
  * Registers and returns a balance for the given node.
  */
 const registerBalance = (node: Node) => {
-    const balance = new Variable(`B(${node.name})`);
+    const balance = new Variable(`Bal-${node.name}`);
     balances.set(node, balance);
     return balance;
 }
@@ -140,8 +140,8 @@ const consumableMixin = (node: NodeBase | Node<Supply>): Node<Consumable> => {
             const { consumableToSupplyable, supplyableToConsumable } = registerTransfers(result, supplyable);
 
             constraints.push(() => {
-                solver.createConstraint(supplyableToConsumable, Operator.Eq, amount, Strength.required);
-                solver.createConstraint(consumableToSupplyable, Operator.Eq, supplyableToConsumable.multiply(-1), Strength.required);
+                solver.createConstraint(consumableToSupplyable, Operator.Eq, amount, Strength.required);
+                solver.createConstraint(supplyableToConsumable, Operator.Eq, consumableToSupplyable.multiply(-1), Strength.required);
             });
 
             return result;
@@ -153,9 +153,9 @@ const consumableMixin = (node: NodeBase | Node<Supply>): Node<Consumable> => {
             const { consumableToSupplyable, supplyableToConsumable } = registerTransfers(result, supplyable);
 
             constraints.push(() => {
-                solver.createConstraint(supplyableToConsumable, Operator.Ge, 0, Strength.required);
-                solver.createConstraint(supplyableToConsumable, Operator.Eq, 0, Strength.weak);
-                solver.createConstraint(consumableToSupplyable, Operator.Eq, supplyableToConsumable.multiply(-1), Strength.required);
+                solver.createConstraint(consumableToSupplyable, Operator.Ge, 0, Strength.required);
+                solver.createConstraint(consumableToSupplyable, Operator.Eq, 0, Strength.weak);
+                solver.createConstraint(supplyableToConsumable, Operator.Eq, consumableToSupplyable.multiply(-1), Strength.required);
             });
 
             return result;
@@ -167,10 +167,9 @@ const consumableMixin = (node: NodeBase | Node<Supply>): Node<Consumable> => {
             const { consumableToSupplyable, supplyableToConsumable } = registerTransfers(result, supplyable);
 
             constraints.push(() => {
-                solver.createConstraint(supplyableToConsumable, Operator.Ge, 0, Strength.required);
-                // TODO: need something to this effect
-                // solver.createConstraint(supplyableToConsumable, Operator.Eq, Infinity, Strength.weak);
-                solver.createConstraint(consumableToSupplyable, Operator.Eq, supplyableToConsumable.multiply(-1), Strength.required);
+                solver.createConstraint(consumableToSupplyable, Operator.Ge, 0, Strength.required);
+                solver.createConstraint(consumableToSupplyable, Operator.Eq, Number.MAX_SAFE_INTEGER, Strength.weak);
+                solver.createConstraint(supplyableToConsumable, Operator.Eq, consumableToSupplyable.multiply(-1), Strength.required);
             });
 
             return result;
