@@ -30,6 +30,11 @@ type Node<T extends NodeType = NodeType> =
     );
 
 /**
+ * All nodes that are part of the network.
+ */
+const allNodes: Node[] = [];
+
+/**
  * Maps each Node to the Set of its suppliers.
  */
 const suppliers: Map<Node<Supplyable>, Set<Node<Consumable>>> = new Map();
@@ -87,6 +92,17 @@ function sumOfSupply (node: Node<Supplyable>): Expression {
 }
 
 /**
+ * Registers sets for the suppliers and consumers of the given node.
+ */
+const registerSuppliersAndConsumers = (node: Node) => {
+    if (node.type === 'consumer' || node.type === 'pipe')
+        suppliers.set(node as Node<Supplyable>, new Set());
+    
+    if (node.type === 'supply' || node.type === 'pipe')
+        consumers.set(node as Node<Consumable>, new Set());
+};
+
+/**
  * Registering a transfer between a consumable and a supplyable requires also registering the inverse transfer.
  * This is tedious, so this function takes care of it.
  */
@@ -101,6 +117,15 @@ const registerTransfers = (consumable: Node<Consumable>, supplyable: Node<Supply
 
     return { consumableToSupplyable, supplyableToConsumable };
 };
+
+/**
+ * Registers and returns a balance for the given node.
+ */
+const registerBalance = (node: Node) => {
+    const balance = new Variable(`B(${node.name})`);
+    balances.set(node, balance);
+    return balance;
+}
 
 /**
  * Turns a node into a consumable.  The given node is modified in place and returned.
@@ -143,7 +168,8 @@ const consumableMixin = (node: NodeBase | Node<Supply>): Node<Consumable> => {
 
             constraints.push(() => {
                 solver.createConstraint(supplyableToConsumable, Operator.Ge, 0, Strength.required);
-                solver.createConstraint(supplyableToConsumable, Operator.Eq, Infinity, Strength.weak);
+                // TODO: need something to this effect
+                // solver.createConstraint(supplyableToConsumable, Operator.Eq, Infinity, Strength.weak);
                 solver.createConstraint(consumableToSupplyable, Operator.Eq, supplyableToConsumable.multiply(-1), Strength.required);
             });
 
@@ -189,9 +215,10 @@ const supplyableMixin = (node: NodeBase | Node<Supply>): Node<Supplyable> => {
  */
 function supply (name: string, capacity: number): Node<Supply> {
     const supply = consumableMixin({ name, type: 'supply' });
-    
-    const balance = new Variable(`B(${name})`);
-    balances.set(supply, balance);
+    const balance = registerBalance(supply);
+    registerSuppliersAndConsumers(supply);
+
+    allNodes.push(supply);
 
     constraints.push(() => {
         solver.createConstraint(balance, Operator.Ge, 0, Strength.required);
@@ -209,17 +236,51 @@ function supply (name: string, capacity: number): Node<Supply> {
 /**
  * Creates a consumer node.
  */
-function consumer (name: string) {
-    // TODO: ...
+function consumer (name: string): Node<Consumer> {
+    const consumer = supplyableMixin({ name, type: 'consumer' });
+    const balance = registerBalance(consumer);
+    registerSuppliersAndConsumers(consumer);
+
+    allNodes.push(consumer);
+
+    constraints.push(() => {
+        solver.createConstraint(balance, Operator.Eq, sumOfSupply(consumer), Strength.required);
+    });
+
+    return consumer;
 }
 
 /**
  * Creates a pipe node.
  */
-function pipe (name: string) {
-    // TODO: ...
+function pipe (name: string): Node<Pipe> {
+    const pipe = supplyableMixin(consumableMixin({ name, type: 'pipe' })) as Node<Pipe>;
+    const balance = registerBalance(pipe);
+    registerSuppliersAndConsumers(pipe);
+
+    allNodes.push(pipe);
+
+    constraints.push(() => {
+        solver.createConstraint(balance, Operator.Eq, 0, Strength.required);
+        solver.createConstraint(
+            balance,
+            Operator.Eq,
+            sumOfSupply(pipe).minus(sumOfConsumption(pipe)),
+            Strength.required
+        );
+    });
+
+    return pipe;
 }
 
-export default {
-    // TODO: ...
-};
+/**
+ * Resolves the balances and tranfers of the network.
+ */
+function solve () {
+    for (const constraint of constraints) constraint();
+    solver.updateVariables();
+
+    return { allNodes, transfers, balances };
+}
+
+export default { supply, consumer, pipe, solve };

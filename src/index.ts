@@ -1,7 +1,13 @@
-// import { Supply, Pipe, Consumer, Network } from './resources';
+import Network from './resources';
 
-// let s = new Supply('Wages', 2000);
-// let c = new Consumer('Rent').consumes(1322).from(s);
-// let r = new Consumer('Remaining').consumesAsMuchAsPossible().from(s);
+let wages = Network.supply('Wages', 2000);
+let rent = Network.consumer('Rent');
+let other = Network.consumer('Other');
 
-// let network = new Network(s, c, r);
+rent.consumes(1322).from(wages);
+other.consumesAsMuchAsPossible().from(wages);
+
+let results = Network.solve();
+
+console.log(results.transfers.get(wages, rent).value());
+console.log(results.transfers.get(wages, other).value());
