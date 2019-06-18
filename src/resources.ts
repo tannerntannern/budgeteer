@@ -8,24 +8,24 @@ type Supplyable = Consumer | Pipe;
 type Consumable = Supply | Pipe;
 type NodeType = Supply | Consumer | Pipe;
 
-type To = { to: (node: Node<Supplyable>) => Node<Consumable> };
-type From = { from: (node: Node<Consumable>) => Node<Supplyable> };
+type To<T extends NodeType = Consumable> = { to: (node: Node<Supplyable>) => Node<T> };
+type From<T extends NodeType = Supplyable> = { from: (node: Node<Consumable>) => Node<T> };
 
 type NodeBase = { name: string, type: NodeType };
 type Node<T extends NodeType = NodeType> =
     NodeBase
     & (
         T extends Consumable ? {
-            supplies: (amount: number) => To,
-            suppliesAsMuchAsNecessary: () => To,
-            suppliesAsMuchAsPossible: () => To,
+            supplies: (amount: number, multiplier?: number) => To<T>,
+            suppliesAsMuchAsNecessary: () => To<T>,
+            suppliesAsMuchAsPossible: () => To<T>,
         } : {}
     )
     & (
         T extends Supplyable ? {
-            consumes: (amount: number) => From,
-            consumesAsMuchAsNecessary: () => From,
-            consumesAsMuchAsPossible: () => From,
+            consumes: (amount: number, multiplier?: number) => From<T>,
+            consumesAsMuchAsNecessary: () => From<T>,
+            consumesAsMuchAsPossible: () => From<T>,
         } : {}
     );
 
@@ -130,13 +130,15 @@ const registerBalance = (node: Node) => {
 /**
  * Turns a node into a consumable.  The given node is modified in place and returned.
  */
-const consumableMixin = (node: NodeBase | Node<Supply>): Node<Consumable> => {
+const consumableMixin = <T extends NodeBase | Node<Consumer>>(node: T): T extends NodeBase ? Node<Consumable> : Node<Pipe> => {
     // The given node will become a Node<Consumable> by the end of the function, so we preemptively assign
     // the type to make the compiler happy.
     const result: Node<Consumable> = node as any;
 
-    result.supplies = (amount: number) => ({
+    result.supplies = (amount: number, multiplier: number = 1) => ({
         to: (supplyable: Node<Supplyable>) => {
+            amount *= multiplier;
+
             const { consumableToSupplyable, supplyableToConsumable } = registerTransfers(result, supplyable);
 
             constraints.push(() => {
@@ -176,18 +178,18 @@ const consumableMixin = (node: NodeBase | Node<Supply>): Node<Consumable> => {
         }
     });
 
-    return result;
+    return result as any;
 }
 
 /**
  * Turns a node into a supplyable.  The given node is modified in place and returned.
  */
-const supplyableMixin = (node: NodeBase | Node<Supply>): Node<Supplyable> => {
-    const result = node as Node<Supplyable>;
+const supplyableMixin = <T extends NodeBase | Node<Supply>>(node: T): T extends NodeBase ? Node<Consumer> : Node<Pipe> => {
+    const result: Node<Supplyable> = node as any;
 
-    result.consumes = (amount: number) => ({
+    result.consumes = (amount: number, multiplier: number = 1) => ({
         from: (consumable: Node<Consumable>) => {
-            consumable.supplies(amount).to(result);
+            consumable.supplies(amount, multiplier).to(result);
             return result;
         }
     });
@@ -206,13 +208,15 @@ const supplyableMixin = (node: NodeBase | Node<Supply>): Node<Supplyable> => {
         }
     })
 
-    return result;
+    return result as any;
 }
 
 /**
  * Creates a supply node.
  */
-function supply (name: string, capacity: number): Node<Supply> {
+function supply (name: string, capacity: number, multiplier: number = 1): Node<Supply> {
+    capacity *= multiplier;
+
     const supply = consumableMixin({ name, type: 'supply' });
     const balance = registerBalance(supply);
     registerSuppliersAndConsumers(supply);
@@ -282,4 +286,4 @@ function solve () {
     return { allNodes, transfers, balances };
 }
 
-export default { supply, consumer, pipe, solve };
+export { supply, consumer, pipe, solve };
