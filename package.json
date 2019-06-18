@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "rimraf": "^2.6.3",
-    "typescript": "^3.5.2"
+    "typescript": "3.4.5"
   },
   "repository": "https://github.com/tannerntannern/budgeteer.git",
   "author": "Tanner Nielsen",
