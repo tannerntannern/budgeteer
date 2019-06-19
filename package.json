@@ -1,6 +1,6 @@
 {
   "name": "@tannerntannern/budgeteer",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "description": "Budget your resources visually",
   "main": "dist/index.js",
   "module": "dist/index.js",
