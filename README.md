@@ -1,4 +1,6 @@
 # 🎩 budgeteer
+[![npm version](https://badgen.net/npm/v/@tannerntannern/budgeteer)](https://npmjs.com/package/@tannerntannern/budgeteer)
+
 > a specialized constraint solver for budget flows
 
 <!-- TODO: insert link to website -->
@@ -12,7 +14,13 @@ Budgeteer is written in TypeScript and relies on [kiwi.js](https://github.com/Ij
 Budgeteer is a hobby-tool I built for myself.  I would not advise using it in production.
 
 # Installation
-Coming soon...
+```
+npm install @tannerntannern/budgeteer
+```
+or
+```
+yarn add @tannerntannern/budgeteer
+```
 
 # Usage example
 Coming soon...
