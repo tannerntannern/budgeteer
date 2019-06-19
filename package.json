@@ -2,8 +2,8 @@
   "name": "budgeteer",
   "version": "1.0.0",
   "description": "Budget your resources visually",
-  "private": true,
   "scripts": {
+    "docs": "rimraf docs && typedoc --out docs ./src && touch ./docs/.nojekyll && git add docs",
     "build": "rimraf dist && tsc",
     "watch": "tsc --watch"
   },
@@ -12,6 +12,8 @@
   },
   "devDependencies": {
     "rimraf": "^2.6.3",
+    "touch": "^3.1.0",
+    "typedoc": "^0.14.2",
     "typescript": "3.4.5"
   },
   "repository": "https://github.com/tannerntannern/budgeteer.git",
