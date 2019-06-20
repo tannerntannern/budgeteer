@@ -283,9 +283,15 @@ function solve () {
     for (const constraint of constraints) constraint();
     solver.updateVariables();
 
-    // TODO: make transfers and balances map to numbers rather than kiwi Variables
+    // Make a transfer map with just numbers rather than kiwi variables
+    const resultTransfers = new TwoKeyMap<Node, number>();
+    transfers.forEach((node1, node2, value) => resultTransfers.set(node1, node2, value.value()));
 
-    return { allNodes, transfers, balances };
+    // Make a balance map with just numbers rather than kiwi variables
+    const resultBalances = new Map<Node, number>();
+    balances.forEach((value, node) => resultBalances.set(node, value.value()));
+
+    return { allNodes, transfers: resultTransfers, balances: resultBalances };
 }
 
 export { supply, consumer, pipe, solve };
