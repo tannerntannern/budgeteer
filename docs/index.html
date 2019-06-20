@@ -78,7 +78,39 @@
 				<h1 id="installation">Installation</h1>
 				<pre><code><span class="hljs-built_in">npm</span> install @tannerntannern/budgeteer</code></pre><p>or</p>
 				<pre><code><span class="hljs-selector-tag">yarn</span> <span class="hljs-selector-tag">add</span> @<span class="hljs-keyword">tannerntannern</span>/<span class="hljs-keyword">budgeteer</span></code></pre><h1 id="usage-example">Usage example</h1>
-				<p>Coming soon...</p>
+				<pre><code class="language-typescript"><span class="hljs-keyword">import</span> { supply, pipe, consumer, solve } <span class="hljs-keyword">from</span> <span class="hljs-string">'@tannerntannern/budgeteer'</span>;
+
+<span class="hljs-comment">// 1. Build a network</span>
+<span class="hljs-keyword">const</span> wages = supply(<span class="hljs-string">'Wages'</span>, <span class="hljs-number">2500</span>);
+<span class="hljs-keyword">const</span> checking = pipe(<span class="hljs-string">'Checking'</span>);
+<span class="hljs-keyword">const</span> expenses = pipe(<span class="hljs-string">'Expenses'</span>);
+
+wages
+    .supplies(<span class="hljs-number">700</span>).to(consumer(<span class="hljs-string">'Taxes'</span>))
+    .supplies(<span class="hljs-number">1200</span>).to(checking)
+    .suppliesAsMuchAsPossible().to(consumer(<span class="hljs-string">'Savings'</span>));
+
+checking
+    .suppliesAsMuchAsNecessary().to(expenses)
+    .suppliesAsMuchAsPossible().to(consumer(<span class="hljs-string">'Spending Money'</span>));
+
+consumer(<span class="hljs-string">'Rent'</span>).consumes(<span class="hljs-number">900</span>).from(expenses);
+consumer(<span class="hljs-string">'Groceries'</span>).consumes(<span class="hljs-number">200</span>).from(expenses);
+
+<span class="hljs-comment">// 2. Balance the network and view results</span>
+<span class="hljs-keyword">const</span> results = solve();
+
+results.transfers.forEach(<span class="hljs-function">(<span class="hljs-params">node1, node2, amount</span>) =&gt;</span> {
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">`<span class="hljs-subst">${node1.name}</span> -- $<span class="hljs-subst">${amount}</span> --&gt; <span class="hljs-subst">${node2.name}</span>`</span>);
+});</code></pre>
+				<p>Which will print:</p>
+				<pre><code><span class="hljs-comment">Wages</span> <span class="hljs-literal">-</span><span class="hljs-literal">-</span> <span class="hljs-comment">$700</span> <span class="hljs-literal">-</span><span class="hljs-literal">-</span>&gt; <span class="hljs-comment">Taxes</span>
+<span class="hljs-comment">Wages</span> <span class="hljs-literal">-</span><span class="hljs-literal">-</span> <span class="hljs-comment">$1200</span> <span class="hljs-literal">-</span><span class="hljs-literal">-</span>&gt; <span class="hljs-comment">Checking</span>
+<span class="hljs-comment">Wages</span> <span class="hljs-literal">-</span><span class="hljs-literal">-</span> <span class="hljs-comment">$600</span> <span class="hljs-literal">-</span><span class="hljs-literal">-</span>&gt; <span class="hljs-comment">Savings</span>
+<span class="hljs-comment">Checking</span> <span class="hljs-literal">-</span><span class="hljs-literal">-</span> <span class="hljs-comment">$1100</span> <span class="hljs-literal">-</span><span class="hljs-literal">-</span>&gt; <span class="hljs-comment">Expenses</span>
+<span class="hljs-comment">Checking</span> <span class="hljs-literal">-</span><span class="hljs-literal">-</span> <span class="hljs-comment">$100</span> <span class="hljs-literal">-</span><span class="hljs-literal">-</span>&gt; <span class="hljs-comment">Spending</span> <span class="hljs-comment">Money</span>
+<span class="hljs-comment">Expenses</span> <span class="hljs-literal">-</span><span class="hljs-literal">-</span> <span class="hljs-comment">$900</span> <span class="hljs-literal">-</span><span class="hljs-literal">-</span>&gt; <span class="hljs-comment">Rent</span>
+<span class="hljs-comment">Expenses</span> <span class="hljs-literal">-</span><span class="hljs-literal">-</span> <span class="hljs-comment">$200</span> <span class="hljs-literal">-</span><span class="hljs-literal">-</span>&gt; <span class="hljs-comment">Groceries</span></code></pre><p>Notice how the unspecified values (savings, expenses, and spending) have all been calculated for you.</p>
 				<h1 id="api">API</h1>
 				<blockquote>
 					<p>For more detailed information, see the <a href="https://tannerntannern.github.io/budgeteer">generated docs</a>.</p>
@@ -181,7 +213,7 @@
 						</tr>
 				</tbody></table>
 				<h1 id="author">Author</h1>
-				<p>Tanner Nielsen <a href="mailto:&#x74;&#x61;&#x6e;&#x6e;&#x65;&#x72;&#x6e;&#x74;&#x61;&#110;&#110;&#101;&#x72;&#x6e;&#64;&#103;&#109;&#97;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;">&#x74;&#x61;&#x6e;&#x6e;&#x65;&#x72;&#x6e;&#x74;&#x61;&#110;&#110;&#101;&#x72;&#x6e;&#64;&#103;&#109;&#97;&#x69;&#108;&#46;&#x63;&#x6f;&#x6d;</a></p>
+				<p>Tanner Nielsen <a href="mailto:&#x74;&#97;&#x6e;&#110;&#x65;&#114;&#x6e;&#116;&#97;&#x6e;&#110;&#x65;&#114;&#x6e;&#x40;&#103;&#109;&#97;&#105;&#108;&#x2e;&#x63;&#x6f;&#x6d;">&#x74;&#97;&#x6e;&#110;&#x65;&#114;&#x6e;&#116;&#97;&#x6e;&#110;&#x65;&#114;&#x6e;&#x40;&#103;&#109;&#97;&#105;&#108;&#x2e;&#x63;&#x6f;&#x6d;</a></p>
 				<p><a href="https://tannernielsen.com">Website</a> | <a href="https://github.com/tannerntannern">GitHub</a></p>
 			</div>
 		</div>
