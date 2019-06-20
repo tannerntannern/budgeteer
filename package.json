@@ -17,7 +17,7 @@
     "build": "rimraf dist && tsc",
     "watch": "tsc --watch",
     "version": "yarn build",
-    "release": "npm publish --access public"
+    "release": "git push && git push --tags && npm publish --access public"
   },
   "dependencies": {
     "kiwi.js": "^1.1.1"
