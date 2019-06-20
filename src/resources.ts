@@ -285,7 +285,11 @@ function solve () {
 
     // Make a transfer map with just numbers rather than kiwi variables
     const resultTransfers = new TwoKeyMap<Node, number>();
-    transfers.forEach((node1, node2, value) => resultTransfers.set(node1, node2, value.value()));
+    transfers.forEach((node1, node2, value) =>  {
+        const amount = value.value();
+        if (amount > 0)
+            resultTransfers.set(node1, node2, amount);
+    });
 
     // Make a balance map with just numbers rather than kiwi variables
     const resultBalances = new Map<Node, number>();
