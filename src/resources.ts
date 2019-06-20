@@ -283,6 +283,8 @@ function solve () {
     for (const constraint of constraints) constraint();
     solver.updateVariables();
 
+    // TODO: make transfers and balances map to numbers rather than kiwi Variables
+
     return { allNodes, transfers, balances };
 }
 
