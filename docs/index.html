@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>budgeteer</title>
+	<title>@tannerntannern/budgeteer</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="assets/css/main.css">
@@ -22,7 +22,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="index.html" class="title">budgeteer</a>
+					<a href="index.html" class="title">@tannerntannern/budgeteer</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -56,7 +56,7 @@
 					<a href="globals.html">Globals</a>
 				</li>
 			</ul>
-			<h1> budgeteer</h1>
+			<h1> @tannerntannern/budgeteer</h1>
 		</div>
 	</div>
 </header>
@@ -65,21 +65,123 @@
 		<div class="col-8 col-content">
 			<div class="tsd-panel tsd-typography">
 				<h1 id="-budgeteer">🎩 budgeteer</h1>
+				<p><a href="https://npmjs.com/package/@tannerntannern/budgeteer"><img src="https://badgen.net/npm/v/@tannerntannern/budgeteer" alt="npm version"></a></p>
 				<blockquote>
 					<p>a specialized constraint solver for budget flows</p>
 				</blockquote>
 				<!-- TODO: insert link to website -->
 				<h1 id="overview">Overview</h1>
-				<p>Budgeteer allows you to effortlessly balance a budget without doing any monotonous work.  It allows you to intuitively define resource flows and budgeteer will balance it for you.  &quot;Resource&quot; is purposely non-specific here -- you can use this tool to balance a monetary budget, manage your time, track calories, or whatever you want.</p>
+				<p>Budgeteer allows you to effortlessly balance a budget without doing any monotonous work.  It lets you define intuitive resource flows and automatically balance them for you.  &quot;Resource&quot; is purposely non-specific here -- you can use this tool to balance a monetary budget, manage your time, track calories, or whatever you want.</p>
 				<p>Budgeteer is written in TypeScript and relies on <a href="https://github.com/IjzerenHein/kiwi.js/">kiwi.js</a> to do constraint solving under the hood.</p>
 				<h2 id="disclaimer">Disclaimer</h2>
 				<p>Budgeteer is a hobby-tool I built for myself.  I would not advise using it in production.</p>
 				<h1 id="installation">Installation</h1>
+				<pre><code><span class="hljs-built_in">npm</span> install @tannerntannern/budgeteer</code></pre><p>or</p>
+				<pre><code><span class="hljs-selector-tag">yarn</span> <span class="hljs-selector-tag">add</span> @<span class="hljs-keyword">tannerntannern</span>/<span class="hljs-keyword">budgeteer</span></code></pre><h1 id="usage-example">Usage example</h1>
 				<p>Coming soon...</p>
-				<h1 id="usage-example">Usage example</h1>
-				<p>Coming soon...</p>
+				<h1 id="api">API</h1>
+				<blockquote>
+					<p>For more detailed information, see the <a href="https://tannerntannern.github.io/budgeteer">generated docs</a>.</p>
+				</blockquote>
+				<h2 id="node-types">Node Types</h2>
+				<p>Budgeteer has three functions for modelling a resource network:</p>
+				<table>
+					<thead>
+						<tr>
+							<th>Function</th>
+							<th>Description</th>
+							<th>Example</th>
+						</tr>
+					</thead>
+					<tbody><tr>
+							<td><code>supply(name, amount, multiplier?)</code></td>
+							<td>Creates a supply node, from which other nodes can draw resources from</td>
+							<td>Wages, savings interest</td>
+						</tr>
+						<tr>
+							<td><code>consumer(name)</code></td>
+							<td>Creates a consumer node, which can draw resources from other nodes, but cannot provide</td>
+							<td>Rent, grocery expenses</td>
+						</tr>
+						<tr>
+							<td><code>pipe(name)</code></td>
+							<td>Creates a mixture between a supply and consumer node; it can both draw and provide resources, although the pipe must draw at least as much as it provides</td>
+							<td>Bank accounts</td>
+						</tr>
+				</tbody></table>
+				<h3 id="key-terms">Key Terms</h3>
+				<p>Nodes that provide are &quot;consumable,&quot; and nodes that can recieve supply are &quot;supplyable.&quot;  Thus, supply nodes are <em>consumable</em>, consumer nodes are <em>supplyable</em>, and pipe nodes are both.</p>
+				<h2 id="node-relationships">Node Relationships</h2>
+				<p>Relationships (i.e., flows) between nodes are established through a chainable API.  Each flow requires two function calls: one that specifies how much, and another that specifies where.  For example: <code>income.supplies(1000).to(rent)</code></p>
+				<h3 id="consumable-node-relationships">Consumable Node Relationships</h3>
+				<p>All <em>consumable</em> nodes have the following methods, each one followed with a <code>.to(&lt;supplyable node&gt;)</code> call, similar to the example above:</p>
+				<table>
+					<thead>
+						<tr>
+							<th>Function</th>
+							<th>Description</th>
+						</tr>
+					</thead>
+					<tbody><tr>
+							<td><code>supplies(amount)</code></td>
+							<td>Supplies a fixed amount to another node</td>
+						</tr>
+						<tr>
+							<td><code>suppliesAsMuchAsNecessary()</code></td>
+							<td>Supplies only as much as the recieving node needs</td>
+						</tr>
+						<tr>
+							<td><code>suppliesAsMuchAsPossible()</code></td>
+							<td>Supplies any remaining resources to another node</td>
+						</tr>
+				</tbody></table>
+				<h3 id="supplyable-node-relationships">Supplyable Node Relationships</h3>
+				<p>All <em>supplyable</em> nodes have the following methods, each one followed with a <code>.from(&lt;consumable node&gt;)</code> call.  For example: <code>rent.consumes(1000).from(wages)</code>:</p>
+				<table>
+					<thead>
+						<tr>
+							<th>Function</th>
+							<th>Description</th>
+						</tr>
+					</thead>
+					<tbody><tr>
+							<td><code>consumes(amount)</code></td>
+							<td>Consumes a fixed amount from another node</td>
+						</tr>
+						<tr>
+							<td><code>consumesAsMuchAsNecessary()</code></td>
+							<td>Consumes only as much as necessary from the supplying node</td>
+						</tr>
+						<tr>
+							<td><code>consumesAsMuchAsPossible()</code></td>
+							<td>Consumes any remaining resources from the supplying node</td>
+						</tr>
+				</tbody></table>
+				<h2 id="balancing-the-network">Balancing the Network</h2>
+				<p>The 4th and final function exported by budgeteer is <code>solve()</code>, which takes the nodes created by the <code>supply</code>, <code>consumer</code>, and <code>pipe</code> functions, along with all the relationships established between them, and calculates the resulting balances and transfers.</p>
+				<p><code>solve()</code> is called without arguments.  If the network can&#39;t be balanced, it will throw an error.  Otherwise, it will return an object with three data structures:</p>
+				<table>
+					<thead>
+						<tr>
+							<th>Property</th>
+							<th>Description</th>
+						</tr>
+					</thead>
+					<tbody><tr>
+							<td><code>allNodes</code></td>
+							<td>An array of all the nodes that were created by the three node type functions</td>
+						</tr>
+						<tr>
+							<td><code>tranfers</code></td>
+							<td>A <code>TwoKeyMap</code> (see the <a href="https://tannerntannern.github.io/budgeteer">generated docs</a>) that maps pairs of nodes to the amount transferred between them</td>
+						</tr>
+						<tr>
+							<td><code>balances</code></td>
+							<td>An ES6 <code>Map</code> of the final balance at each node after all the consuming and supplying is over</td>
+						</tr>
+				</tbody></table>
 				<h1 id="author">Author</h1>
-				<p>Tanner Nielsen <a href="mailto:&#x74;&#x61;&#110;&#110;&#x65;&#x72;&#x6e;&#x74;&#x61;&#110;&#110;&#101;&#x72;&#x6e;&#64;&#x67;&#109;&#97;&#105;&#x6c;&#46;&#x63;&#x6f;&#x6d;">&#x74;&#x61;&#110;&#110;&#x65;&#x72;&#x6e;&#x74;&#x61;&#110;&#110;&#101;&#x72;&#x6e;&#64;&#x67;&#109;&#97;&#105;&#x6c;&#46;&#x63;&#x6f;&#x6d;</a></p>
+				<p>Tanner Nielsen <a href="mailto:&#x74;&#x61;&#x6e;&#x6e;&#x65;&#114;&#110;&#x74;&#x61;&#x6e;&#110;&#x65;&#114;&#110;&#64;&#103;&#x6d;&#x61;&#x69;&#x6c;&#x2e;&#99;&#x6f;&#109;">&#x74;&#x61;&#x6e;&#x6e;&#x65;&#114;&#110;&#x74;&#x61;&#x6e;&#110;&#x65;&#114;&#110;&#64;&#103;&#x6d;&#x61;&#x69;&#x6c;&#x2e;&#99;&#x6f;&#109;</a></p>
 				<p><a href="https://tannernielsen.com">Website</a> | <a href="https://github.com/tannerntannern">GitHub</a></p>
 			</div>
 		</div>

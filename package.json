@@ -16,7 +16,7 @@
     "docs": "rimraf docs && typedoc --out docs ./src && touch ./docs/.nojekyll && git add docs",
     "build": "rimraf dist && tsc",
     "watch": "tsc --watch",
-    "version": "yarn build",
+    "version": "yarn build && yarn docs",
     "release": "git push && git push --tags && npm publish --access public"
   },
   "dependencies": {
