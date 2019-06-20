@@ -23,7 +23,46 @@ yarn add @tannerntannern/budgeteer
 ```
 
 # Usage example
-Coming soon...
+```typescript
+import { supply, pipe, consumer, solve } from '@tannerntannern/budgeteer';
+
+// 1. Build a network
+const wages = supply('Wages', 2500);
+const checking = pipe('Checking');
+const expenses = pipe('Expenses');
+
+wages
+    .supplies(700).to(consumer('Taxes'))
+    .supplies(1200).to(checking)
+    .suppliesAsMuchAsPossible().to(consumer('Savings'));
+
+checking
+    .suppliesAsMuchAsNecessary().to(expenses)
+    .suppliesAsMuchAsPossible().to(consumer('Spending Money'));
+
+consumer('Rent').consumes(900).from(expenses);
+consumer('Groceries').consumes(200).from(expenses);
+
+// 2. Balance the network and view results
+const results = solve();
+
+results.transfers.forEach((node1, node2, amount) => {
+    console.log(`${node1.name} -- $${amount} --> ${node2.name}`);
+});
+```
+
+Which will print:
+```
+Wages -- $700 --> Taxes
+Wages -- $1200 --> Checking
+Wages -- $600 --> Savings
+Checking -- $1100 --> Expenses
+Checking -- $100 --> Spending Money
+Expenses -- $900 --> Rent
+Expenses -- $200 --> Groceries
+```
+
+Notice how the unspecified values (savings, expenses, and spending) have all been calculated for you.
 
 # API
 > For more detailed information, see the [generated docs][1].
