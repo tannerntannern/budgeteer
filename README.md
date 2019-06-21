@@ -1,5 +1,6 @@
 # 🎩 budgeteer
 [![npm version](https://badgen.net/npm/v/@tannerntannern/budgeteer)](https://npmjs.com/package/@tannerntannern/budgeteer)
+[![min size](https://badgen.net/bundlephobia/min/@tannerntannern/budgeteer)](https://bundlephobia.com/result?p=@tannerntannern/budgeteer)
 
 > a specialized constraint solver for budget flows
 
