@@ -63,7 +63,7 @@ const constraints: (() => void)[] = [];
 /**
  * Constraint solver that does all the heavy lifting.
  */
-const solver = new Solver();
+let solver = new Solver();
 
 /**
  * Clears all nodes, relationships, and constraints, and resets the kiwi.js solver.
@@ -74,6 +74,8 @@ const reset = () => {
 
     [suppliers, consumers, balances, transfers]
         .forEach(collection => collection.clear());
+    
+    let solver = new Solver();
 };
 
 /**
