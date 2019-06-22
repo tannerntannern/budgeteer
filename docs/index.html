@@ -65,16 +65,15 @@
 		<div class="col-8 col-content">
 			<div class="tsd-panel tsd-typography">
 				<h1 id="-budgeteer">🎩 budgeteer</h1>
-				<p><a href="https://npmjs.com/package/@tannerntannern/budgeteer"><img src="https://badgen.net/npm/v/@tannerntannern/budgeteer" alt="npm version"></a></p>
+				<p><a href="https://npmjs.com/package/@tannerntannern/budgeteer"><img src="https://badgen.net/npm/v/@tannerntannern/budgeteer" alt="npm version"></a>
+				<a href="https://bundlephobia.com/result?p=@tannerntannern/budgeteer"><img src="https://badgen.net/bundlephobia/min/@tannerntannern/budgeteer" alt="min size"></a></p>
 				<blockquote>
 					<p>a specialized constraint solver for budget flows</p>
 				</blockquote>
-				<!-- TODO: insert link to website -->
 				<h1 id="overview">Overview</h1>
 				<p>Budgeteer allows you to effortlessly balance a budget without doing any monotonous work.  It lets you define intuitive resource flows and automatically balance them for you.  &quot;Resource&quot; is purposely non-specific here -- you can use this tool to balance a monetary budget, manage your time, track calories, or whatever you want.</p>
 				<p>Budgeteer is written in TypeScript and relies on <a href="https://github.com/IjzerenHein/kiwi.js/">kiwi.js</a> to do constraint solving under the hood.</p>
-				<h2 id="disclaimer">Disclaimer</h2>
-				<p>Budgeteer is a hobby-tool I built for myself.  I would not advise using it in production.</p>
+				<p>Check out the <a href="https://budgeteer.tannernielsen.com">demo website</a> to see it in action, or keep reading if you want to integrate the API yourself.</p>
 				<h1 id="installation">Installation</h1>
 				<pre><code><span class="hljs-built_in">npm</span> install @tannerntannern/budgeteer</code></pre><p>or</p>
 				<pre><code><span class="hljs-selector-tag">yarn</span> <span class="hljs-selector-tag">add</span> @<span class="hljs-keyword">tannerntannern</span>/<span class="hljs-keyword">budgeteer</span></code></pre><h1 id="usage-example">Usage example</h1>
@@ -190,7 +189,7 @@ results.transfers.forEach(<span class="hljs-function">(<span class="hljs-params"
 						</tr>
 				</tbody></table>
 				<h2 id="balancing-the-network">Balancing the Network</h2>
-				<p>The 4th and final function exported by budgeteer is <code>solve()</code>, which takes the nodes created by the <code>supply</code>, <code>consumer</code>, and <code>pipe</code> functions, along with all the relationships established between them, and calculates the resulting balances and transfers.</p>
+				<p>To resolve the network use <code>solve()</code>, which takes the nodes created by the <code>supply</code>, <code>consumer</code>, and <code>pipe</code> functions, along with all the relationships established between them, and calculates the resulting balances and transfers.</p>
 				<p><code>solve()</code> is called without arguments.  If the network can&#39;t be balanced, it will throw an error.  Otherwise, it will return an object with three data structures:</p>
 				<table>
 					<thead>
@@ -212,8 +211,10 @@ results.transfers.forEach(<span class="hljs-function">(<span class="hljs-params"
 							<td>An ES6 <code>Map</code> of the final balance at each node after all the consuming and supplying is over</td>
 						</tr>
 				</tbody></table>
+				<h2 id="resetting-the-network">Resetting the Network</h2>
+				<p>If you want to clear all nodes and setup a new network, use the <code>reset()</code> function.</p>
 				<h1 id="author">Author</h1>
-				<p>Tanner Nielsen <a href="mailto:&#x74;&#97;&#x6e;&#110;&#x65;&#114;&#x6e;&#116;&#97;&#x6e;&#110;&#x65;&#114;&#x6e;&#x40;&#103;&#109;&#97;&#105;&#108;&#x2e;&#x63;&#x6f;&#x6d;">&#x74;&#97;&#x6e;&#110;&#x65;&#114;&#x6e;&#116;&#97;&#x6e;&#110;&#x65;&#114;&#x6e;&#x40;&#103;&#109;&#97;&#105;&#108;&#x2e;&#x63;&#x6f;&#x6d;</a></p>
+				<p>Tanner Nielsen <a href="mailto:&#116;&#x61;&#x6e;&#110;&#101;&#114;&#x6e;&#116;&#97;&#x6e;&#x6e;&#101;&#114;&#x6e;&#64;&#x67;&#x6d;&#97;&#x69;&#108;&#46;&#99;&#111;&#109;">&#116;&#x61;&#x6e;&#110;&#101;&#114;&#x6e;&#116;&#97;&#x6e;&#x6e;&#101;&#114;&#x6e;&#64;&#x67;&#x6d;&#97;&#x69;&#108;&#46;&#99;&#111;&#109;</a></p>
 				<p><a href="https://tannernielsen.com">Website</a> | <a href="https://github.com/tannerntannern">GitHub</a></p>
 			</div>
 		</div>

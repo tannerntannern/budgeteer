@@ -4,15 +4,12 @@
 
 > a specialized constraint solver for budget flows
 
-<!-- TODO: insert link to website -->
-
 # Overview
 Budgeteer allows you to effortlessly balance a budget without doing any monotonous work.  It lets you define intuitive resource flows and automatically balance them for you.  "Resource" is purposely non-specific here -- you can use this tool to balance a monetary budget, manage your time, track calories, or whatever you want.
 
 Budgeteer is written in TypeScript and relies on [kiwi.js][4] to do constraint solving under the hood.
 
-## Disclaimer
-Budgeteer is a hobby-tool I built for myself.  I would not advise using it in production.
+Check out the [demo website](https://budgeteer.tannernielsen.com) to see it in action, or keep reading if you want to integrate the API yourself.
 
 # Installation
 ```
@@ -102,7 +99,7 @@ All _supplyable_ nodes have the following methods, each one followed with a `.fr
 | `consumesAsMuchAsPossible()` | Consumes any remaining resources from the supplying node |
 
 ## Balancing the Network
-The 4th and final function exported by budgeteer is `solve()`, which takes the nodes created by the `supply`, `consumer`, and `pipe` functions, along with all the relationships established between them, and calculates the resulting balances and transfers.
+To resolve the network use `solve()`, which takes the nodes created by the `supply`, `consumer`, and `pipe` functions, along with all the relationships established between them, and calculates the resulting balances and transfers.
 
 `solve()` is called without arguments.  If the network can't be balanced, it will throw an error.  Otherwise, it will return an object with three data structures:
 
@@ -111,6 +108,9 @@ The 4th and final function exported by budgeteer is `solve()`, which takes the n
 | `allNodes` | An array of all the nodes that were created by the three node type functions |
 | `tranfers` | A `TwoKeyMap` (see the [generated docs][1]) that maps pairs of nodes to the amount transferred between them |
 | `balances` | An ES6 `Map` of the final balance at each node after all the consuming and supplying is over |
+
+## Resetting the Network
+If you want to clear all nodes and setup a new network, use the `reset()` function.
 
 # Author
 Tanner Nielsen <tannerntannern@gmail.com>

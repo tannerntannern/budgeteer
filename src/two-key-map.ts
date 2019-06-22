@@ -37,4 +37,11 @@ export class TwoKeyMap<K, V> {
             });
         });
     }
+
+    /**
+     * Clears all entries from the TwoKeyMap.
+     */
+    public clear () {
+        this.values.clear();
+    }
 }

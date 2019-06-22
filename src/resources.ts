@@ -66,6 +66,17 @@ const constraints: (() => void)[] = [];
 const solver = new Solver();
 
 /**
+ * Clears all nodes, relationships, and constraints, and resets the kiwi.js solver.
+ */
+const reset = () => {
+    allNodes.length = 0;
+    constraints.length = 0;
+
+    [suppliers, consumers, balances, transfers]
+        .forEach(collection => collection.clear());
+};
+
+/**
  * Returns an Expression that represents the total value consumed by the given node's consumers.
  */
 function sumOfConsumption (node: Node<Consumable>): Expression {
@@ -298,4 +309,4 @@ function solve () {
     return { allNodes, transfers: resultTransfers, balances: resultBalances };
 }
 
-export { supply, consumer, pipe, solve };
+export { supply, consumer, pipe, solve, reset };
