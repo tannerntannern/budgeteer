@@ -9,7 +9,7 @@ Budgeteer allows you to effortlessly balance a budget without doing any monotono
 
 Budgeteer is written in TypeScript and relies on [kiwi.js][4] to do constraint solving under the hood.
 
-Check out the [demo website](https://budgeteer.tannernielsen.com) to see it in action, or keep reading if you want to integrate the API yourself.
+Check out the [demo website][6] to see it in action, or keep reading if you want to integrate the API yourself.
 
 # Installation
 ```
@@ -112,6 +112,9 @@ To resolve the network use `solve()`, which takes the nodes created by the `supp
 ## Resetting the Network
 If you want to clear all nodes and setup a new network, use the `reset()` function.
 
+<!-- # How the Math Works
+I recently made a post that talks about how these function calls translate to mathematical constraints.  If you're interested, [here's a link][5]. -->
+
 # Author
 Tanner Nielsen <tannerntannern@gmail.com>
 
@@ -121,3 +124,5 @@ Tanner Nielsen <tannerntannern@gmail.com>
 [2]: https://tannernielsen.com
 [3]: https://github.com/tannerntannern
 [4]: https://github.com/IjzerenHein/kiwi.js/
+[5]: https://blog.tannernielsen.com/2019/06/25/Budgeteer-A-Budget-Balancing-Tool/
+[6]: https://budgeteer.tannernielsen.com

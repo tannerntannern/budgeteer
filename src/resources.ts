@@ -8,11 +8,11 @@ type Supplyable = Consumer | Pipe;
 type Consumable = Supply | Pipe;
 type NodeType = Supply | Consumer | Pipe;
 
-type To<T extends NodeType = Consumable> = { to: (node: Node<Supplyable>) => Node<T> };
-type From<T extends NodeType = Supplyable> = { from: (node: Node<Consumable>) => Node<T> };
+type To<T extends NodeType = Consumable> = { to: (node: FlowNode<Supplyable>) => FlowNode<T> };
+type From<T extends NodeType = Supplyable> = { from: (node: FlowNode<Consumable>) => FlowNode<T> };
 
 type NodeBase = { name: string, type: NodeType };
-type Node<T extends NodeType = NodeType> =
+type FlowNode<T extends NodeType = NodeType> =
     NodeBase
     & (
         T extends Consumable ? {
@@ -32,27 +32,27 @@ type Node<T extends NodeType = NodeType> =
 /**
  * All nodes that are part of the network.
  */
-const allNodes: Node[] = [];
+const allNodes: FlowNode[] = [];
 
 /**
  * Maps each Node to the Set of its suppliers.
  */
-const suppliers: Map<Node<Supplyable>, Set<Node<Consumable>>> = new Map();
+const suppliers: Map<FlowNode<Supplyable>, Set<FlowNode<Consumable>>> = new Map();
 
 /**
  * Maps each Node to the Set of its consumers.
  */
-const consumers: Map<Node<Consumable>, Set<Node<Supplyable>>> = new Map();
+const consumers: Map<FlowNode<Consumable>, Set<FlowNode<Supplyable>>> = new Map();
 
 /**
  * Maps each Node to its balance.
  */
-const balances: Map<Node, Variable> = new Map();
+const balances: Map<FlowNode, Variable> = new Map();
 
 /**
  * Maps a pair of Nodes to the amount transferred between them.
  */
-const transfers: TwoKeyMap<Node, Variable> = new TwoKeyMap();
+const transfers: TwoKeyMap<FlowNode, Variable> = new TwoKeyMap();
 
 /**
  * Array of functions that setup constraints on the solver.  Due to the nature of some of these constraints,
@@ -81,7 +81,7 @@ const reset = () => {
 /**
  * Returns an Expression that represents the total value consumed by the given node's consumers.
  */
-function sumOfConsumption (node: Node<Consumable>): Expression {
+function sumOfConsumption (node: FlowNode<Consumable>): Expression {
     let result = new Expression(0);
 
     consumers.get(node).forEach(consumer => {
@@ -94,7 +94,7 @@ function sumOfConsumption (node: Node<Consumable>): Expression {
 /**
  * Returns an Expression that represents the total value supplied by the given node's suppliers.
  */
-function sumOfSupply (node: Node<Supplyable>): Expression {
+function sumOfSupply (node: FlowNode<Supplyable>): Expression {
     let result = new Expression(0);
 
     suppliers.get(node).forEach(supplier => {
@@ -107,19 +107,19 @@ function sumOfSupply (node: Node<Supplyable>): Expression {
 /**
  * Registers sets for the suppliers and consumers of the given node.
  */
-const registerSuppliersAndConsumers = (node: Node) => {
+const registerSuppliersAndConsumers = (node: FlowNode) => {
     if (node.type === 'consumer' || node.type === 'pipe')
-        suppliers.set(node as Node<Supplyable>, new Set());
+        suppliers.set(node as FlowNode<Supplyable>, new Set());
     
     if (node.type === 'supply' || node.type === 'pipe')
-        consumers.set(node as Node<Consumable>, new Set());
+        consumers.set(node as FlowNode<Consumable>, new Set());
 };
 
 /**
  * Registering a transfer between a consumable and a supplyable requires also registering the inverse transfer.
  * This is tedious, so this function takes care of it.
  */
-const registerTransfers = (consumable: Node<Consumable>, supplyable: Node<Supplyable>) => {
+const registerTransfers = (consumable: FlowNode<Consumable>, supplyable: FlowNode<Supplyable>) => {
     suppliers.get(supplyable).add(consumable);
     consumers.get(consumable).add(supplyable);
 
@@ -134,7 +134,7 @@ const registerTransfers = (consumable: Node<Consumable>, supplyable: Node<Supply
 /**
  * Registers and returns a balance for the given node.
  */
-const registerBalance = (node: Node) => {
+const registerBalance = (node: FlowNode) => {
     const balance = new Variable(`Bal-${node.name}`);
     balances.set(node, balance);
     return balance;
@@ -143,13 +143,13 @@ const registerBalance = (node: Node) => {
 /**
  * Turns a node into a consumable.  The given node is modified in place and returned.
  */
-const consumableMixin = <T extends NodeBase | Node<Consumer>>(node: T): T extends NodeBase ? Node<Consumable> : Node<Pipe> => {
+const consumableMixin = <T extends NodeBase | FlowNode<Consumer>>(node: T): T extends NodeBase ? FlowNode<Consumable> : FlowNode<Pipe> => {
     // The given node will become a Node<Consumable> by the end of the function, so we preemptively assign
     // the type to make the compiler happy.
-    const result: Node<Consumable> = node as any;
+    const result: FlowNode<Consumable> = node as any;
 
     result.supplies = (amount: number, multiplier: number = 1) => ({
-        to: (supplyable: Node<Supplyable>) => {
+        to: (supplyable: FlowNode<Supplyable>) => {
             amount *= multiplier;
 
             const { consumableToSupplyable, supplyableToConsumable } = registerTransfers(result, supplyable);
@@ -164,7 +164,7 @@ const consumableMixin = <T extends NodeBase | Node<Consumer>>(node: T): T extend
     });
 
     result.suppliesAsMuchAsNecessary = () => ({
-        to: (supplyable: Node<Supplyable>) => {
+        to: (supplyable: FlowNode<Supplyable>) => {
             const { consumableToSupplyable, supplyableToConsumable } = registerTransfers(result, supplyable);
 
             constraints.push(() => {
@@ -178,7 +178,7 @@ const consumableMixin = <T extends NodeBase | Node<Consumer>>(node: T): T extend
     });
 
     result.suppliesAsMuchAsPossible = () => ({
-        to: (supplyable: Node<Supplyable>) => {
+        to: (supplyable: FlowNode<Supplyable>) => {
             const { consumableToSupplyable, supplyableToConsumable } = registerTransfers(result, supplyable);
 
             constraints.push(() => {
@@ -197,25 +197,25 @@ const consumableMixin = <T extends NodeBase | Node<Consumer>>(node: T): T extend
 /**
  * Turns a node into a supplyable.  The given node is modified in place and returned.
  */
-const supplyableMixin = <T extends NodeBase | Node<Supply>>(node: T): T extends NodeBase ? Node<Consumer> : Node<Pipe> => {
-    const result: Node<Supplyable> = node as any;
+const supplyableMixin = <T extends NodeBase | FlowNode<Supply>>(node: T): T extends NodeBase ? FlowNode<Consumer> : FlowNode<Pipe> => {
+    const result: FlowNode<Supplyable> = node as any;
 
     result.consumes = (amount: number, multiplier: number = 1) => ({
-        from: (consumable: Node<Consumable>) => {
+        from: (consumable: FlowNode<Consumable>) => {
             consumable.supplies(amount, multiplier).to(result);
             return result;
         }
     });
 
     result.consumesAsMuchAsNecessary = () => ({
-        from: (consumable: Node<Consumable>) => {
+        from: (consumable: FlowNode<Consumable>) => {
             consumable.suppliesAsMuchAsNecessary().to(result);
             return result;
         }
     });
 
     result.consumesAsMuchAsPossible = () => ({
-        from: (consumable: Node<Consumable>) => {
+        from: (consumable: FlowNode<Consumable>) => {
             consumable.suppliesAsMuchAsPossible().to(result);
             return result;
         }
@@ -227,7 +227,7 @@ const supplyableMixin = <T extends NodeBase | Node<Supply>>(node: T): T extends 
 /**
  * Creates a supply node.
  */
-function supply (name: string, capacity: number, multiplier: number = 1): Node<Supply> {
+function supply (name: string, capacity: number, multiplier: number = 1): FlowNode<Supply> {
     capacity *= multiplier;
 
     const supply = consumableMixin({ name, type: 'supply' });
@@ -252,7 +252,7 @@ function supply (name: string, capacity: number, multiplier: number = 1): Node<S
 /**
  * Creates a consumer node.
  */
-function consumer (name: string): Node<Consumer> {
+function consumer (name: string): FlowNode<Consumer> {
     const consumer = supplyableMixin({ name, type: 'consumer' });
     const balance = registerBalance(consumer);
     registerSuppliersAndConsumers(consumer);
@@ -269,8 +269,8 @@ function consumer (name: string): Node<Consumer> {
 /**
  * Creates a pipe node.
  */
-function pipe (name: string): Node<Pipe> {
-    const pipe = supplyableMixin(consumableMixin({ name, type: 'pipe' })) as Node<Pipe>;
+function pipe (name: string): FlowNode<Pipe> {
+    const pipe = supplyableMixin(consumableMixin({ name, type: 'pipe' })) as FlowNode<Pipe>;
     const balance = registerBalance(pipe);
     registerSuppliersAndConsumers(pipe);
 
@@ -297,7 +297,7 @@ function solve () {
     solver.updateVariables();
 
     // Make a transfer map with just numbers rather than kiwi variables
-    const resultTransfers = new TwoKeyMap<Node, number>();
+    const resultTransfers = new TwoKeyMap<FlowNode, number>();
     transfers.forEach((node1, node2, value) =>  {
         const amount = value.value();
         if (amount > 0)
@@ -305,7 +305,7 @@ function solve () {
     });
 
     // Make a balance map with just numbers rather than kiwi variables
-    const resultBalances = new Map<Node, number>();
+    const resultBalances = new Map<FlowNode, number>();
     balances.forEach((value, node) => resultBalances.set(node, value.value()));
 
     return { allNodes, transfers: resultTransfers, balances: resultBalances };
