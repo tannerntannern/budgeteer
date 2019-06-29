@@ -112,8 +112,8 @@ To resolve the network use `solve()`, which takes the nodes created by the `supp
 ## Resetting the Network
 If you want to clear all nodes and setup a new network, use the `reset()` function.
 
-<!-- # How the Math Works
-I recently made a post that talks about how these function calls translate to mathematical constraints.  If you're interested, [here's a link][5]. -->
+# How the Math Works
+I recently made a post that, among other things, talks in detail about how these function calls translate to mathematical constraints.  If you're interested, [here's a link][5].
 
 # Author
 Tanner Nielsen <tannerntannern@gmail.com>
