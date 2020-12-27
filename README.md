@@ -124,5 +124,5 @@ Tanner Nielsen <tannerntannern@gmail.com>
 [2]: https://tannernielsen.com
 [3]: https://github.com/tannerntannern
 [4]: https://github.com/IjzerenHein/kiwi.js/
-[5]: https://blog.tannernielsen.com/2019/06/25/Budgeteer-A-Budget-Balancing-Tool/
+[5]: https://blog.tannernielsen.com/2019/06/25/budgeteer-a-budget-balancing-tool
 [6]: https://budgeteer.tannernielsen.com

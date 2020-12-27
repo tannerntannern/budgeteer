@@ -1,6 +1,6 @@
 {
   "name": "@tannerntannern/budgeteer",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A specialized constraint solver for budget flows",
   "keywords": [
     "budgeting",
